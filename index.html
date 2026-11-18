@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MGRS → Google Maps</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f3f5f4;
+    --surface: #ffffff;
+    --surface-2: #e9edeb;
+    --text: #17201c;
+    --muted: #5a6761;
+    --border: #cfd8d3;
+    --accent: #0b6b50;
+    --accent-text: #ffffff;
+    --error: #b3261e;
+    --error-bg: #fdf0ef;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121715;
+      --surface: #1b2220;
+      --surface-2: #27302d;
+      --text: #e8eeeb;
+      --muted: #9daaa4;
+      --border: #36423d;
+      --accent: #58c8a2;
+      --accent-text: #08231a;
+      --error: #ffb4ab;
+      --error-bg: #3a1f1d;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(340px, 460px) minmax(0, 1fr);
+    gap: 16px;
+    height: 100%;
+    padding: 16px;
+  }
+  .panel { display: flex; flex-direction: column; gap: 16px; min-height: 0; overflow-y: auto; }
+  h1 { margin: 0; font-size: 1.375rem; line-height: 1.2; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  label { font-weight: 600; }
+  textarea {
+    width: 100%;
+    min-height: 104px;
+    padding: 10px 12px;
+    resize: vertical;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font: 1.0625rem/1.4 ui-monospace, "Cascadia Mono", Consolas, monospace;
+  }
+  textarea:focus-visible, button:focus-visible, a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .hint, .note { margin: 0; color: var(--muted); font-size: .875rem; }
+  .link-btn {
+    padding: 0;
+    color: var(--accent);
+    background: none;
+    border: 0;
+    font: inherit;
+    font-size: .875rem;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .results { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .card.is-selected { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+  .card.is-error { padding: 10px 12px; background: var(--error-bg); border-color: var(--error); }
+  .pick {
+    display: block;
+    width: 100%;
+    padding: 10px 12px 6px;
+    color: inherit;
+    background: none;
+    border: 0;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .mgrs { display: block; color: var(--muted); font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .875rem; overflow-wrap: anywhere; }
+  .coords { display: block; font-size: 1.25rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .meta { display: block; color: var(--muted); font-size: .8125rem; }
+  .error-text { display: block; margin-top: 2px; color: var(--error); font-size: .875rem; }
+  .actions { display: flex; gap: 8px; padding: 6px 12px 12px; }
+  .btn {
+    flex: 1;
+    min-height: 40px;
+    padding: 8px 12px;
+    color: var(--text);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font: inherit;
+    font-size: .9375rem;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .btn.primary { color: var(--accent-text); background: var(--accent); border-color: var(--accent); }
+  .map {
+    position: relative;
+    min-height: 0;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .map iframe { display: block; width: 100%; height: 100%; border: 0; }
+  .map-empty {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    padding: 24px;
+    color: var(--muted);
+    text-align: center;
+  }
+  [hidden] { display: none !important; }
+  @media (max-width: 800px) {
+    html, body { height: auto; }
+    .layout { display: flex; flex-direction: column; height: auto; }
+    .panel { overflow: visible; }
+    .map { height: 340px; flex: none; }
+  }
+</style>
+</head>
+<body>
+<main class="layout">
+  <section class="panel">
+    <h1>MGRS → Google Maps</h1>
+
+    <div class="field">
+      <div class="field-head">
+        <label for="input">Координати MGRS</label>
+        <button type="button" class="link-btn" id="example">Вставити приклад</button>
+      </div>
+      <textarea id="input" rows="3" spellcheck="false" autocomplete="off" autocapitalize="characters"
+        placeholder="36U UA 24182 91607" aria-describedby="input-hint" autofocus></textarea>
+      <p class="hint" id="input-hint">Кілька координат вводьте з нового рядка.</p>
+    </div>
+
+    <ul class="results" id="results" aria-live="polite"></ul>
+
+    <p class="note">Датум WGS84. Результат є центром указаного квадрата. Перетворення виконується у браузері, а в Google координата надсилається лише для показу карти.</p>
+  </section>
+
+  <section class="map" aria-label="Карта">
+    <div class="map-empty" id="map-empty">Введіть координату, і точка з'явиться на карті.</div>
+    <iframe id="map" title="Точка на Google Maps" hidden referrerpolicy="no-referrer-when-downgrade"></iframe>
+  </section>
+</main>
+
+<script src="mgrs.js"></script>
+<script>
+  (function () {
+    'use strict';
+
+    const EXAMPLE = '36U UA 24182 91607';
+    const SQUARE_LABELS = { 1: '1 м', 10: '10 м', 100: '100 м', 1000: '1 км', 10000: '10 км', 100000: '100 км' };
+    const MAP_ZOOM = { 1: 17, 10: 17, 100: 16, 1000: 14, 10000: 11, 100000: 8 };
+
+    const input = document.getElementById('input');
+    const results = document.getElementById('results');
+    const map = document.getElementById('map');
+    const mapEmpty = document.getElementById('map-empty');
+
+    let items = [];
+    let selected = -1;
+    let mapTimer = 0;
+
+    function el(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+
+    function latLonText(point) {
+      return `${point.lat.toFixed(6)}, ${point.lon.toFixed(6)}`;
+    }
+
+    function mapsUrl(point) {
+      return `https://www.google.com/maps/search/?api=1&query=${point.lat.toFixed(6)},${point.lon.toFixed(6)}`;
+    }
+
+    function embedUrl(point) {
+      const q = `${point.lat.toFixed(6)},${point.lon.toFixed(6)}`;
+      return `https://maps.google.com/maps?q=${q}&z=${MAP_ZOOM[point.squareSize]}&output=embed`;
+    }
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        const helper = el('textarea');
+        helper.value = text;
+        helper.style.position = 'fixed';
+        helper.style.opacity = '0';
+        document.body.appendChild(helper);
+        helper.select();
+        const copied = document.execCommand('copy');
+        helper.remove();
+        return copied;
+      }
+    }
+
+    function convert(raw) {
+      try {
+        return { raw, point: MGRS.toLatLon(raw) };
+      } catch (error) {
+        if (error instanceof MGRS.MgrsError) return { raw, error: error.message };
+        throw error;
+      }
+    }
+
+    function renderCard(item, index) {
+      if (item.error) {
+        const card = el('li', 'card is-error');
+        card.append(el('span', 'mgrs', item.raw), el('span', 'error-text', item.error));
+        return card;
+      }
+
+      const point = item.point;
+      const card = el('li', index === selected ? 'card is-selected' : 'card');
+
+      const pick = el('button', 'pick');
+      pick.type = 'button';
+      pick.setAttribute('aria-pressed', String(index === selected));
+      pick.title = 'Показати на карті';
+      pick.append(
+        el('span', 'mgrs', point.mgrs),
+        el('span', 'coords', latLonText(point)),
+        el('span', 'meta', `${MGRS.toDms(point.lat, point.lon)} · квадрат ${SQUARE_LABELS[point.squareSize]}`)
+      );
+      pick.addEventListener('click', () => select(index));
+
+      const actions = el('div', 'actions');
+      const copy = el('button', 'btn', 'Копіювати');
+      copy.type = 'button';
+      copy.addEventListener('click', async () => {
+        const copied = await copyText(latLonText(point));
+        copy.textContent = copied ? 'Скопійовано' : 'Не вдалося';
+        setTimeout(() => { copy.textContent = 'Копіювати'; }, 1500);
+      });
+
+      const open = el('a', 'btn primary', 'Відкрити в Google Maps');
+      open.href = mapsUrl(point);
+      open.target = '_blank';
+      open.rel = 'noopener noreferrer';
+
+      actions.append(copy, open);
+      card.append(pick, actions);
+      return card;
+    }
+
+    function render() {
+      results.replaceChildren(...items.map(renderCard));
+    }
+
+    function showOnMap(delay) {
+      clearTimeout(mapTimer);
+      const point = items[selected] && items[selected].point;
+      if (!point) {
+        map.hidden = true;
+        map.removeAttribute('src');
+        mapEmpty.hidden = false;
+        return;
+      }
+      // Затримка не дає завантажувати карту на кожну введену цифру.
+      mapTimer = setTimeout(() => {
+        const url = embedUrl(point);
+        if (map.getAttribute('src') !== url) map.src = url;
+        map.hidden = false;
+        mapEmpty.hidden = true;
+      }, delay);
+    }
+
+    function select(index) {
+      selected = index;
+      render();
+      showOnMap(0);
+    }
+
+    function update() {
+      items = MGRS.splitList(input.value).map(convert);
+      if (!items[selected] || !items[selected].point) {
+        selected = items.findIndex((item) => item.point);
+      }
+      render();
+      showOnMap(600);
+    }
+
+    input.addEventListener('input', update);
+    document.getElementById('example').addEventListener('click', () => {
+      input.value = EXAMPLE;
+      update();
+      input.focus();
+    });
+  })();
+</script>
+</body>
+</html>
