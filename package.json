@@ -1,0 +1,29 @@
+{
+  "name": "mgrs-converter",
+  "version": "1.0.0",
+  "description": "Вебзастосунок для перетворення координат MGRS на WGS84 і показу точки на Google Maps",
+  "private": true,
+  "license": "MIT",
+  "author": "MeffMara",
+  "homepage": "https://meffmara.github.io/mgrs-converter/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MeffMara/mgrs-converter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MeffMara/mgrs-converter/issues"
+  },
+  "keywords": [
+    "mgrs",
+    "wgs84",
+    "coordinates",
+    "converter",
+    "google-maps"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test"
+  }
+}

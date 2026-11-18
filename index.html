@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MGRS → Google Maps</title>
+<meta name="description" content="Перетворення координат MGRS на широту й довготу WGS84 з показом точки на Google Maps.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="MGRS → Google Maps">
+<meta property="og:description" content="Перетворення координат MGRS на широту й довготу WGS84 з показом точки на Google Maps.">
+<meta property="og:url" content="https://meffmara.github.io/mgrs-converter/">
+<meta property="og:image" content="https://meffmara.github.io/mgrs-converter/docs/screenshot.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b6b50'/%3E%3Cpath d='M16 6a8 8 0 0 0-8 8c0 6 8 12 8 12s8-6 8-12a8 8 0 0 0-8-8Z' fill='%23fff'/%3E%3Ccircle cx='16' cy='14' r='3' fill='%230b6b50'/%3E%3C/svg%3E">
 <style>
   :root {
     color-scheme: light dark;
@@ -68,6 +76,7 @@
     outline-offset: 1px;
   }
   .hint, .note { margin: 0; color: var(--muted); font-size: .875rem; }
+  .note a { color: var(--accent); }
   .link-btn {
     padding: 0;
     color: var(--accent);
@@ -162,7 +171,7 @@
 
     <ul class="results" id="results" aria-live="polite"></ul>
 
-    <p class="note">Датум WGS84. Результат є центром указаного квадрата. Перетворення виконується у браузері, а в Google координата надсилається лише для показу карти.</p>
+    <p class="note">Датум WGS84. Результат є центром указаного квадрата. Перетворення виконується у браузері, але для показу карти вибрана точка автоматично надсилається в Google. <a href="https://github.com/MeffMara/mgrs-converter" target="_blank" rel="noopener noreferrer">Код на GitHub</a></p>
   </section>
 
   <section class="map" aria-label="Карта">
